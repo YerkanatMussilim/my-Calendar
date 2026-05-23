@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Күнтізбе">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0f18">
+<title>Жылдық Күнтізбе</title>
+<style>
+/* ─── Reset & root ─────────────────────────────── */
+:root{
+  --bg:#0b0f18; --bg2:#111827; --surface:rgba(255,255,255,0.04);
+  --surface2:rgba(255,255,255,0.08); --border:rgba(255,255,255,0.08);
+  --border2:rgba(255,255,255,0.15); --text:#cdd9e5; --muted:rgba(205,217,229,0.45);
+  --accent:#c9a84c; --today:#4ade90; --search:#e8d060;
+  --nav-h:68px; --header-h:56px; --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--bg);}
+body{
+  font-family:-apple-system,'SF Pro Display','Jost',sans-serif;
+  color:var(--text);
+  display:flex;justify-content:center;
+  background:var(--bg);
+}
+
+/* ─── Phone shell ──────────────────────────────── */
+.shell{
+  width:min(430px,100vw);height:100%;
+  display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+  background:var(--bg);
+}
+
+/* ─── Header ───────────────────────────────────── */
+.app-header{
+  flex-shrink:0;height:calc(var(--header-h) + var(--safe-top));
+  padding-top:var(--safe-top);
+  display:flex;align-items:center;justify-content:space-between;
+  padding-left:20px;padding-right:16px;
+  background:rgba(11,15,24,0.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  position:relative;z-index:100;
+}
+.app-title{
+  font-size:18px;font-weight:600;
+  background:linear-gradient(135deg,var(--text),var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.header-right{display:flex;align-items:center;gap:6px;}
+.cache-badge{
+  font-size:11px;padding:3px 9px;border-radius:20px;
+  background:rgba(201,168,76,0.12);color:var(--accent);
+  border:1px solid rgba(201,168,76,0.2);
+  display:none;
+}
+
+/* ─── Tab content ──────────────────────────────── */
+.tab-content{
+  flex:1;overflow:hidden;position:relative;
+}
+.tab-pane{
+  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  opacity:0;pointer-events:none;transition:opacity .22s ease;
+  padding-bottom:8px;
+}
+.tab-pane.active{opacity:1;pointer-events:auto;}
+
+/* ─── Bottom nav ───────────────────────────────── */
+.bottom-nav{
+  flex-shrink:0;height:calc(var(--nav-h) + var(--safe-bot));
+  padding-bottom:var(--safe-bot);
+  display:flex;align-items:stretch;
+  background:rgba(11,15,24,0.96);
+  backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);
+  position:relative;z-index:100;
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;
+  border:none;background:none;color:var(--muted);
+  font-size:10px;font-weight:500;letter-spacing:.3px;
+  cursor:pointer;padding:8px 0;
+  transition:color .18s;position:relative;
+}
+.nav-btn.active{color:var(--accent);}
+.nav-btn svg{transition:transform .18s;}
+.nav-btn.active svg{transform:scale(1.12);}
+.nav-dot{
+  position:absolute;top:8px;right:calc(50% - 14px);
+  width:6px;height:6px;border-radius:50%;background:var(--accent);
+  display:none;
+}
+
+/* ─── Shared components ────────────────────────── */
+.section{margin:16px 16px 0;}
+.section-label{
+  font-size:11px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:12px;font-weight:500;
+}
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:18px;margin-bottom:12px;
+}
+
+/* ─── TODAY TAB ────────────────────────────────── */
+.today-hero{
+  background:linear-gradient(135deg,rgba(74,222,144,0.08),rgba(11,15,24,0));
+  border:1px solid rgba(74,222,144,0.15);
+  border-radius:24px;padding:24px 20px;margin:16px 16px 0;
+}
+.today-date-row{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;}
+.today-day-num{
+  font-size:72px;font-weight:700;
+  color:var(--today);line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.today-date-info{display:flex;flex-direction:column;gap:6px;}
+.today-month{font-size:22px;font-weight:500;}
+.today-year{font-size:13px;color:var(--muted);}
+.today-bd-section{margin-top:16px;padding-top:16px;border-top:1px solid rgba(74,222,144,0.15);}
+.today-bd-label{font-size:12px;color:rgba(74,222,144,0.7);margin-bottom:8px;letter-spacing:.5px;}
+.bd-row{
+  display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-bottom:1px solid var(--border);
+}
+.bd-row:last-child{border-bottom:none;}
+.bd-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.bd-name{font-size:15px;flex:1;}
+.bd-age{font-size:13px;color:var(--accent);}
+
+/* Upcoming list */
+.up-card{
+  display:flex;align-items:center;gap:14px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:14px 16px;margin-bottom:10px;
+}
+.up-left{text-align:center;min-width:42px;}
+.up-day{
+  font-size:28px;font-weight:700;color:var(--accent);
+  font-family:'SF Pro Display',serif;line-height:1;
+}
+.up-mon{font-size:11px;color:var(--muted);margin-top:2px;}
+.up-info{flex:1;min-width:0;}
+.up-name{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.up-meta{font-size:12px;color:var(--muted);margin-top:3px;}
+.up-soon{
+  font-size:11px;padding:3px 9px;border-radius:20px;
+  background:rgba(201,168,76,0.1);color:var(--accent);white-space:nowrap;
+}
+
+/* ─── CALENDAR TAB ─────────────────────────────── */
+.cat-chips{
+  display:flex;gap:8px;overflow-x:auto;padding:14px 16px 10px;
+  scrollbar-width:none;
+}
+.cat-chips::-webkit-scrollbar{display:none;}
+.chip{
+  flex-shrink:0;display:flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:20px;
+  border:1px solid var(--border2);background:var(--surface);
+  color:var(--muted);font-size:13px;cursor:pointer;
+  transition:all .16s;white-space:nowrap;
+}
+.chip.active{color:var(--text);background:var(--surface2);}
+.chip-dot{width:8px;height:8px;border-radius:50%;}
+
+.cal-svg-wrap{
+  padding:0 12px;position:relative;
+}
+.cal-svg-wrap svg{width:100%;height:auto;display:block;}
+
+/* Day info bar (tap feedback) */
+.day-info-bar{
+  margin:10px 16px 0;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:16px;padding:14px 16px;
+  min-height:52px;transition:all .2s;
+}
+.dib-date{font-size:17px;font-weight:600;color:var(--accent);margin-bottom:6px;}
+.dib-empty{font-size:13px;color:var(--muted);}
+.dib-person{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.dib-person:last-child{margin-bottom:0;}
+
+/* ─── SEARCH TAB ───────────────────────────────── */
+.search-box{
+  margin:16px 16px 0;position:relative;
+}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:.35;pointer-events:none;}
+.search-input{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:14px;padding:14px 14px 14px 42px;
+  color:var(--text);font-size:16px;outline:none;
+  font-family:inherit;transition:border-color .2s;
+  -webkit-appearance:none;
+}
+.search-input::placeholder{color:var(--muted);}
+.search-input:focus{border-color:rgba(201,168,76,0.5);}
+
+.search-result-card{
+  margin:12px 16px 0;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:18px;
+  display:none;
+}
+.sr-name{font-size:24px;font-weight:600;margin-bottom:4px;}
+.sr-date{font-size:14px;color:var(--muted);}
+.sr-age{font-size:32px;font-weight:700;color:var(--accent);margin-top:8px;}
+.sr-age-label{font-size:12px;color:var(--muted);}
+.sr-cat{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:14px;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;
+}
+/* Highlight on dial */
+.sr-dial-hint{
+  margin-top:12px;padding:10px 14px;border-radius:12px;
+  background:rgba(232,208,96,0.07);border:1px solid rgba(232,208,96,0.2);
+  font-size:12px;color:rgba(232,208,96,0.7);
+  display:flex;align-items:center;gap:6px;
+}
+
+.people-list{padding:0 16px;}
+.person-row{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background .15s;
+}
+.person-row:last-child{border-bottom:none;}
+.pr-avatar{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:600;flex-shrink:0;
+}
+.pr-info{flex:1;min-width:0;}
+.pr-name{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pr-date{font-size:12px;color:var(--muted);margin-top:2px;}
+.pr-age{font-size:14px;color:var(--accent);font-weight:600;flex-shrink:0;}
+
+/* ─── DATA TAB ─────────────────────────────────── */
+.stat-row{
+  display:flex;align-items:center;gap:16px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:18px;padding:18px;margin-bottom:12px;
+}
+.stat-icon{font-size:28px;}
+.stat-label{font-size:13px;color:var(--muted);margin-bottom:3px;}
+.stat-value{font-size:20px;font-weight:600;color:var(--text);}
+
+.action-btn{
+  display:flex;align-items:center;gap:12px;
+  width:100%;padding:16px;border-radius:16px;
+  border:1px solid var(--border2);background:var(--surface);
+  color:var(--text);font-family:inherit;font-size:15px;font-weight:500;
+  cursor:pointer;transition:all .18s;text-align:left;margin-bottom:10px;
+}
+.action-btn:active{background:var(--surface2);}
+.action-btn.primary{
+  background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.3);color:var(--accent);
+}
+.action-btn.primary:active{background:rgba(201,168,76,0.18);}
+.action-btn.danger{
+  background:rgba(240,80,80,0.06);border-color:rgba(240,80,80,0.2);color:#f07070;
+}
+.action-btn.danger:active{background:rgba(240,80,80,0.12);}
+.ab-icon{font-size:20px;flex-shrink:0;}
+.ab-info{flex:1;}
+.ab-title{font-size:15px;font-weight:500;}
+.ab-sub{font-size:12px;opacity:.6;margin-top:2px;}
+
+/* ─── Bottom Sheet Modal ───────────────────────── */
+.sheet-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(6px);z-index:500;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.sheet-overlay.open{opacity:1;pointer-events:auto;}
+.sheet{
+  background:#141a24;border-radius:24px 24px 0 0;
+  border-top:1px solid var(--border2);
+  padding:0 0 calc(20px + var(--safe-bot));
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  max-height:90vh;overflow-y:auto;
+}
+.sheet-overlay.open .sheet{transform:translateY(0);}
+.sheet-handle{
+  width:36px;height:4px;border-radius:2px;
+  background:rgba(255,255,255,0.2);
+  margin:12px auto 0;
+}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 4px;}
+.sheet-title{font-size:20px;font-weight:700;}
+.sheet-close{
+  background:var(--surface2);border:none;color:var(--muted);
+  width:32px;height:32px;border-radius:50%;font-size:16px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.sheet-body{padding:16px 20px 0;}
+
+.format-card{
+  background:rgba(201,168,76,0.07);border:1px solid rgba(201,168,76,0.18);
+  border-radius:14px;padding:14px 16px;margin-bottom:16px;
+}
+.format-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.format-row:last-child{margin-bottom:0;}
+.fcol{
+  width:26px;height:26px;border-radius:8px;
+  background:rgba(201,168,76,0.18);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;flex-shrink:0;
+}
+.ftext{font-size:13px;color:var(--muted);}
+
+.drop-zone{
+  border:2px dashed var(--border2);border-radius:16px;
+  padding:32px 20px;text-align:center;cursor:pointer;
+  transition:all .18s;color:var(--muted);
+}
+.drop-zone.drag-over,.drop-zone:active{
+  border-color:var(--accent);background:rgba(201,168,76,0.05);
+}
+.dz-icon{font-size:36px;margin-bottom:10px;}
+.dz-text{font-size:14px;margin-bottom:6px;}
+.dz-sub{font-size:12px;opacity:.6;}
+
+.preview-section{margin-top:16px;}
+.preview-stats-row{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;
+}
+.preview-count{font-size:14px;font-weight:600;color:var(--accent);}
+.preview-cats-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.preview-cat-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;font-size:12px;
+}
+
+.preview-scroll{
+  max-height:180px;overflow-y:auto;border:1px solid var(--border);
+  border-radius:12px;scrollbar-width:thin;
+}
+.ptable{width:100%;border-collapse:collapse;font-size:13px;}
+.ptable th{
+  padding:8px 12px;text-align:left;color:var(--muted);font-weight:500;
+  border-bottom:1px solid var(--border);background:rgba(255,255,255,0.03);
+  position:sticky;top:0;
+}
+.ptable td{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.ptable tr:last-child td{border-bottom:none;}
+.p-pill{padding:2px 8px;border-radius:20px;font-size:11px;}
+
+.preview-error{
+  margin-top:10px;padding:12px 14px;border-radius:12px;
+  background:rgba(240,80,80,0.08);border:1px solid rgba(240,80,80,0.2);
+  color:#f07070;font-size:13px;white-space:pre-line;
+}
+
+.sheet-actions{display:flex;gap:10px;margin-top:16px;}
+.sa-cancel{
+  flex:1;padding:14px;border-radius:14px;border:1px solid var(--border2);
+  background:transparent;color:var(--muted);font-family:inherit;font-size:15px;cursor:pointer;
+}
+.sa-apply{
+  flex:2;padding:14px;border-radius:14px;border:none;
+  background:var(--accent);color:#0b0f18;font-family:inherit;
+  font-size:15px;font-weight:700;cursor:pointer;transition:opacity .16s;
+}
+.sa-apply:disabled{opacity:.35;cursor:not-allowed;}
+
+/* Import mode selector */
+.mode-selector{display:flex;gap:8px;margin-bottom:16px;}
+.mode-btn{
+  flex:1;padding:10px;border-radius:12px;border:1px solid var(--border2);
+  background:transparent;color:var(--muted);font-family:inherit;
+  font-size:13px;cursor:pointer;transition:all .16s;text-align:center;
+}
+.mode-btn.active{background:rgba(201,168,76,0.1);border-color:rgba(201,168,76,0.35);color:var(--accent);}
+
+/* Confirm sheet (for clear) */
+.confirm-text{font-size:15px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+
+/* Empty state */
+.empty{
+  text-align:center;padding:48px 24px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.empty-icon{font-size:48px;opacity:.5;}
+.empty-title{font-size:17px;font-weight:600;color:var(--muted);}
+.empty-sub{font-size:13px;color:var(--muted);opacity:.7;line-height:1.5;}
+
+/* SVG elements */
+.day-seg{fill:none;cursor:pointer;}
+.month-lbl{font-family:inherit;font-size:14px;font-weight:400;text-anchor:middle;dominant-baseline:middle;pointer-events:none;}
+.season-lbl{font-family:inherit;font-size:11px;font-weight:500;letter-spacing:3px;text-transform:uppercase;text-anchor:middle;dominant-baseline:middle;fill:rgba(200,210,225,0.15);pointer-events:none;}
+
+@keyframes todayP{0%,100%{stroke-opacity:1;}50%{stroke-opacity:.45;}}
+.today-anim{animation:todayP 2.5s ease-in-out infinite;}
+@keyframes searchP{0%,100%{stroke-opacity:1;}50%{stroke-opacity:.5;}}
+.search-anim{animation:searchP 1.4s ease-in-out infinite;}
+
+/* Install banner */
+.install-banner{
+  margin:16px 16px 0;padding:14px 16px;
+  background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);
+  border-radius:16px;display:none;
+}
+.install-banner.show{display:flex;align-items:center;gap:12px;}
+.ib-text{flex:1;font-size:13px;color:var(--muted);}
+.ib-btn{
+  padding:8px 16px;border-radius:10px;border:none;
+  background:var(--accent);color:#0b0f18;font-size:13px;font-weight:600;
+  cursor:pointer;white-space:nowrap;flex-shrink:0;
+}
+</style>
+</head>
+<body>
+
+<div class="shell" id="shell">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-title">Жылдық Күнтізбе</div>
+    <div class="header-right">
+      <div class="cache-badge" id="cacheBadge">💾 Сақталған</div>
+    </div>
+  </header>
+
+  <!-- ══════════ TAB CONTENT ══════════ -->
+  <div class="tab-content">
+
+    <!-- ── TAB: БҮГІН ── -->
+    <div class="tab-pane active" id="tab-today">
+      <!-- Install Banner -->
+      <div class="install-banner" id="installBanner">
+        <div>📲</div>
+        <div class="ib-text">Үй экранына қосып, офлайн пайдаланыңыз</div>
+        <button class="ib-btn" id="installBtn">Орнату</button>
+      </div>
+
+      <!-- Today hero -->
+      <div class="today-hero">
+        <div class="today-date-row">
+          <div class="today-day-num" id="tNum">—</div>
+          <div class="today-date-info">
+            <div class="today-month" id="tMonth">—</div>
+            <div class="today-year" id="tYear">—</div>
+          </div>
+        </div>
+        <div class="today-bd-section" id="todayBdSection"></div>
+      </div>
+
+      <!-- Upcoming -->
+      <div class="section">
+        <div class="section-label">Жақындағы туған күндер</div>
+        <div id="upcomingList">
+          <div class="empty">
+            <div class="empty-icon">📅</div>
+            <div class="empty-title">Деректер жоқ</div>
+            <div class="empty-sub">«Деректер» бөлімінен Excel файлын жүктеңіз</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: КҮНТІЗБЕ ── -->
+    <div class="tab-pane" id="tab-calendar">
+      <div class="cat-chips" id="catChips">
+        <div class="chip active" style="border-color:rgba(201,168,76,0.4);color:var(--accent)" 
+             data-cat="all" onclick="selectCat('all')">
+          <span class="chip-dot" style="background:var(--accent)"></span>
+          Барлығы
+        </div>
+      </div>
+
+      <div class="cal-svg-wrap">
+        <svg id="svg" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+
+      <!-- Tap info bar -->
+      <div class="day-info-bar" id="dayInfoBar">
+        <div class="dib-empty" style="color:var(--muted);font-size:13px">Күнді басыңыз</div>
+      </div>
+    </div>
+
+    <!-- ── TAB: ІЗДЕУ ── -->
+    <div class="tab-pane" id="tab-search">
+      <div class="search-box">
+        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input class="search-input" id="searchInput" type="search"
+               placeholder="Аты-жөні..." autocomplete="off" autocorrect="off"
+               list="namesList">
+        <datalist id="namesList"></datalist>
+      </div>
+      <div class="search-result-card" id="searchCard"></div>
+      <div class="section" style="margin-top:12px">
+        <div class="people-list" id="peopleList"></div>
+      </div>
+    </div>
+
+    <!-- ── TAB: ДЕРЕКТЕР ── -->
+    <div class="tab-pane" id="tab-data">
+      <div class="section">
+        <div class="section-label">Статистика</div>
+        <div class="stat-row">
+          <div class="stat-icon">👥</div>
+          <div>
+            <div class="stat-label">Адам саны</div>
+            <div class="stat-value" id="statPeople">0</div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-icon">🏷</div>
+          <div>
+            <div class="stat-label">Санаттар</div>
+            <div class="stat-value" id="statCats">—</div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-icon">🕐</div>
+          <div>
+            <div class="stat-label">Соңғы жаңарту</div>
+            <div class="stat-value" id="statUpdated">—</div>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:20px">Деректер</div>
+
+        <button class="action-btn primary" onclick="openImport('replace')">
+          <div class="ab-icon">📂</div>
+          <div class="ab-info">
+            <div class="ab-title">Excel жүктеу (ауыстыру)</div>
+            <div class="ab-sub">Барлық деректерді жаңасымен алмастырады</div>
+          </div>
+        </button>
+
+        <button class="action-btn" onclick="openImport('merge')">
+          <div class="ab-icon">➕</div>
+          <div class="ab-info">
+            <div class="ab-title">Excel жүктеу (қосу)</div>
+            <div class="ab-sub">Бар деректерге жаңаларын қосады</div>
+          </div>
+        </button>
+
+        <button class="action-btn danger" onclick="openConfirmClear()">
+          <div class="ab-icon">🗑</div>
+          <div class="ab-info">
+            <div class="ab-title">Деректерді тазалау</div>
+            <div class="ab-sub">Барлық сақталған деректерді өшіреді</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /tab-content -->
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="today" onclick="switchTab('today',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Бүгін
+    </button>
+    <button class="nav-btn" data-tab="calendar" onclick="switchTab('calendar',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Күнтізбе
+    </button>
+    <button class="nav-btn" data-tab="search" onclick="switchTab('search',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Іздеу
+    </button>
+    <button class="nav-btn" data-tab="data" onclick="switchTab('data',this)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+      </svg>
+      Деректер
+      <div class="nav-dot" id="dataDot"></div>
+    </button>
+  </nav>
+
+</div><!-- /shell -->
+
+<!-- ═══════════ IMPORT SHEET ═══════════ -->
+<div class="sheet-overlay" id="importSheet" onclick="sheetOverlayClick(event,'importSheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">Excel жүктеу</div>
+      <button class="sheet-close" onclick="closeSheet('importSheet')">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div id="importModeLabel" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></div>
+      <div class="format-card">
+        <div class="format-row"><span class="fcol">A</span><span class="ftext">Туған күні &nbsp;<em>(КК.АА.ЖЖЖЖ)</em></span></div>
+        <div class="format-row"><span class="fcol">B</span><span class="ftext">Аты-жөні</span></div>
+        <div class="format-row"><span class="fcol">C</span><span class="ftext">Санат &nbsp;<em>(кез-келген атау)</em></span></div>
+      </div>
+      <div class="drop-zone" id="dropZone"
+           ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)"
+           onclick="document.getElementById('fileInput').click()">
+        <div class="dz-icon">📂</div>
+        <div class="dz-text">Файлды таңдаңыз</div>
+        <div class="dz-sub">.xlsx / .xls / .csv &nbsp;·&nbsp; 1-жол тақырып</div>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none"
+             onchange="handleFile(this.files[0])">
+
+      <div class="preview-section" id="previewSection" style="display:none">
+        <div class="preview-stats-row">
+          <div style="font-size:13px;color:var(--muted)">Алдын ала қарау</div>
+          <div class="preview-count" id="previewCount"></div>
+        </div>
+        <div class="preview-cats-wrap" id="previewCats"></div>
+        <div class="preview-scroll">
+          <table class="ptable">
+            <thead><tr><th>Күні</th><th>Аты</th><th>Санат</th></tr></thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+        <div id="previewError" class="preview-error" style="display:none"></div>
+        <div class="sheet-actions">
+          <button class="sa-cancel" onclick="closeSheet('importSheet')">Болдырмау</button>
+          <button class="sa-apply" id="applyBtn" onclick="applyImport()" disabled>Қолдану</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ CONFIRM CLEAR SHEET ═══════════ -->
+<div class="sheet-overlay" id="clearSheet" onclick="sheetOverlayClick(event,'clearSheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">Деректерді тазалау</div>
+      <button class="sheet-close" onclick="closeSheet('clearSheet')">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="confirm-text">
+        Барлық сақталған деректер өшіріледі.<br>Бұл әрекетті қайтару мүмкін емес.
+      </div>
+      <div class="sheet-actions">
+        <button class="sa-cancel" onclick="closeSheet('clearSheet')">Болдырмау</button>
+        <button class="sa-apply" style="background:#e04a4a" onclick="clearData()">Өшіру</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════════════════ */
+const kMonths=["Қаңтар","Ақпан","Наурыз","Сәуір","Мамыр","Маусым",
+               "Шілде","Тамыз","Қыркүйек","Қазан","Қараша","Желтоқсан"];
+const mDays=[31,28,31,30,31,30,31,31,30,31,30,31];
+const TOTAL=365;
+const MCOL=["#7eb8d4","#9ac8e0","#72c98a","#a3d96a","#f0d04a","#f5b53c",
+            "#f47d4a","#e8603a","#c8984a","#b8832c","#7a9fc4","#6a8fb4"];
+const PALETTE=["#e0734a","#3ecfb2","#818cf8","#f5c04a","#56b4d3",
+               "#c97bbf","#72c98a","#e87272","#a0c86e","#6ec8c8",
+               "#e8a060","#7090e0","#d46e8e","#5ec88c","#c8c060"];
+
+const now=new Date();
+const todayDS=pad(now.getDate())+'.'+pad(now.getMonth()+1);
+const CACHE_KEY='kuntizbe_v1';
+
+/* ═══════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════ */
+let people=[];
+let catColors={};
+let activeCategory='all';
+let paletteIdx=0;
+let pendingImport=null;
+let importMode='replace';
+let searchHighlightDS=null;
+
+const elState={};
+const dayEls={};
+
+function pad(n){return String(n).padStart(2,'0');}
+function calcAge(ds){
+  const[d,m,y]=ds.split('.');
+  const bd=new Date(+y,+m-1,+d);
+  let a=now.getFullYear()-bd.getFullYear();
+  if(now<new Date(now.getFullYear(),bd.getMonth(),bd.getDate()))a--;
+  return a;
+}
+function catColor(c){return catColors[c]||'#aaa';}
+function activePeople(){
+  return activeCategory==='all'?people:people.filter(p=>p.cat===activeCategory);
+}
+function initials(name){
+  const parts=name.trim().split(' ');
+  return parts.map(p=>p[0]||'').join('').slice(0,2).toUpperCase()||'?';
+}
+
+/* ═══════════════════════════════════════════════════
+   CACHE (localStorage)
+═══════════════════════════════════════════════════ */
+function saveCache(){
+  try{
+    localStorage.setItem(CACHE_KEY,JSON.stringify({
+      people,catColors,
+      savedAt:new Date().toISOString()
+    }));
+    document.getElementById('cacheBadge').style.display='block';
+  }catch(e){console.warn('Cache save failed',e);}
+}
+
+function loadCache(){
+  try{
+    const raw=localStorage.getItem(CACHE_KEY);
+    if(!raw)return false;
+    const d=JSON.parse(raw);
+    if(!d.people||!d.people.length)return false;
+    people=d.people;
+    catColors=d.catColors||{};
+    // Recalculate paletteIdx
+    paletteIdx=Object.keys(catColors).length%PALETTE.length;
+    document.getElementById('cacheBadge').style.display='block';
+    // Update last saved
+    if(d.savedAt){
+      const dt=new Date(d.savedAt);
+      document.getElementById('statUpdated').textContent=
+        pad(dt.getDate())+'.'+pad(dt.getMonth()+1)+'.'+dt.getFullYear()+
+        ' '+pad(dt.getHours())+':'+pad(dt.getMinutes());
+    }
+    return true;
+  }catch(e){return false;}
+}
+
+function clearData(){
+  people=[];catColors={};activeCategory='all';paletteIdx=0;
+  localStorage.removeItem(CACHE_KEY);
+  document.getElementById('cacheBadge').style.display='none';
+  closeSheet('clearSheet');
+  fullRefresh();
+}
+
+/* ═══════════════════════════════════════════════════
+   TODAY TAB
+═══════════════════════════════════════════════════ */
+document.getElementById('tNum').textContent=now.getDate();
+document.getElementById('tMonth').textContent=kMonths[now.getMonth()];
+document.getElementById('tYear').textContent=now.getFullYear();
+
+function renderToday(){
+  const box=document.getElementById('todayBdSection');
+  const found=activePeople().filter(p=>p.date.startsWith(todayDS));
+  if(!found.length){
+    box.innerHTML=`<div style="font-size:13px;color:rgba(74,222,144,0.5)">Бүгін туған күн жоқ</div>`;
+    return;
+  }
+  box.innerHTML=`<div class="today-bd-label">🎂 Туған күн</div>`+
+    found.map(p=>`<div class="bd-row">
+      <span class="bd-dot" style="background:${catColor(p.cat)}"></span>
+      <span class="bd-name">${p.name}</span>
+      <span class="bd-age">${calcAge(p.date)} жас</span>
+    </div>`).join('');
+}
+
+function renderUpcoming(){
+  const box=document.getElementById('upcomingList');
+  if(!people.length){
+    box.innerHTML=`<div class="empty">
+      <div class="empty-icon">📅</div>
+      <div class="empty-title">Деректер жоқ</div>
+      <div class="empty-sub">«Деректер» бөлімінен Excel файлын жүктеңіз</div>
+    </div>`;return;
+  }
+  const todayOrd=now.getMonth()*31+now.getDate();
+  const cands=activePeople().map(p=>{
+    const[d,m]=p.date.split('.');
+    const ord=(+m-1)*31+ +d;
+    let dl=ord-todayOrd;if(dl<=0)dl+=366;
+    return{...p,dl,ds:pad(+d)+'.'+pad(+m),dm:+m};
+  }).sort((a,b)=>a.dl-b.dl).slice(0,8);
+
+  box.innerHTML=cands.map(p=>{
+    const col=catColor(p.cat);
+    const soonLabel=p.dl<=7?`<div class="up-soon">${p.dl} күн</div>`:'';
+    return`<div class="up-card">
+      <div class="up-left">
+        <div class="up-day">${p.ds.slice(0,2)}</div>
+        <div class="up-mon">${kMonths[p.dm-1].slice(0,3)}</div>
+      </div>
+      <div class="up-info">
+        <div class="up-name">${p.name}</div>
+        <div class="up-meta">${p.dl} күн · ${calcAge(p.date)+1} жас болады</div>
+      </div>
+      ${soonLabel||`<div style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0;margin-top:6px"></div>`}
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════
+   CATEGORY CHIPS (calendar tab)
+═══════════════════════════════════════════════════ */
+function buildChips(){
+  const wrap=document.getElementById('catChips');
+  const cats=[...new Set(people.map(p=>p.cat))].sort();
+  let html=`<div class="chip${activeCategory==='all'?' active':''}"
+     style="${activeCategory==='all'?'border-color:rgba(201,168,76,0.4);color:var(--accent)':''}"
+     data-cat="all" onclick="selectCat('all')">
+    <span class="chip-dot" style="background:var(--accent)"></span>Барлығы
+  </div>`;
+  cats.forEach(cat=>{
+    const col=catColor(cat);
+    const act=activeCategory===cat;
+    html+=`<div class="chip${act?' active':''}"
+       style="${act?`border-color:${col}55;color:${col}`:''}"
+       data-cat="${cat}" onclick="selectCat('${cat}')">
+      <span class="chip-dot" style="background:${col}"></span>${cat}
+    </div>`;
+  });
+  wrap.innerHTML=html;
+}
+
+function selectCat(cat){
+  activeCategory=cat;
+  buildChips();
+  redrawSegments();
+  if(searchHighlightDS)applySearchHighlight();
+  renderToday();renderUpcoming();renderPeopleList();
+}
+
+/* ═══════════════════════════════════════════════════
+   SEARCH TAB
+═══════════════════════════════════════════════════ */
+function rebuildDatalist(){
+  const dl=document.getElementById('namesList');
+  dl.innerHTML='';
+  people.forEach(p=>{const o=document.createElement('option');o.value=p.name;dl.appendChild(o);});
+}
+
+function renderPeopleList(filter=''){
+  const box=document.getElementById('peopleList');
+  if(!people.length){
+    box.innerHTML=`<div class="empty">
+      <div class="empty-icon">🔍</div>
+      <div class="empty-title">Деректер жоқ</div>
+      <div class="empty-sub">Excel файлын жүктеп, тізімді толтырыңыз</div>
+    </div>`;return;
+  }
+  let list=activePeople();
+  if(filter) list=list.filter(p=>p.name.toLowerCase().includes(filter));
+  if(!list.length){
+    box.innerHTML=`<div style="text-align:center;padding:32px 0;color:var(--muted);font-size:14px">Табылмады</div>`;
+    return;
+  }
+  box.innerHTML=list.map(p=>{
+    const col=catColor(p.cat);
+    return`<div class="person-row" onclick="selectPerson('${p.name}')">
+      <div class="pr-avatar" style="background:${col}22;color:${col}">${initials(p.name)}</div>
+      <div class="pr-info">
+        <div class="pr-name">${p.name}</div>
+        <div class="pr-date">${p.date} · ${p.cat}</div>
+      </div>
+      <div class="pr-age">${calcAge(p.date)}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('searchInput').addEventListener('input',function(){
+  const val=this.value.trim();
+  clearSearchHighlight();
+  const card=document.getElementById('searchCard');
+  if(!val){card.style.display='none';renderPeopleList();return;}
+  let p=people.find(x=>x.name.toLowerCase()===val.toLowerCase());
+  if(!p){
+    const part=people.filter(x=>x.name.toLowerCase().includes(val.toLowerCase()));
+    if(part.length===1)p=part[0];
+  }
+  if(p){showSearchCard(p);searchHighlightDS=p.date.substring(0,5);applySearchHighlight();}
+  else{card.style.display='none';}
+  renderPeopleList(val);
+});
+
+function selectPerson(name){
+  const p=people.find(x=>x.name===name);
+  if(!p)return;
+  document.getElementById('searchInput').value=p.name;
+  showSearchCard(p);
+  clearSearchHighlight();
+  searchHighlightDS=p.date.substring(0,5);
+  applySearchHighlight();
+  renderPeopleList(p.name);
+}
+
+function showSearchCard(p){
+  const col=catColor(p.cat);
+  const card=document.getElementById('searchCard');
+  card.style.display='block';
+  card.innerHTML=`
+    <div class="sr-name" style="color:${col}">${p.name}</div>
+    <div class="sr-date">${p.date}</div>
+    <div class="sr-age">${calcAge(p.date)}</div>
+    <div class="sr-age-label">жас</div>
+    <span class="sr-cat" style="background:${col}18;color:${col};border:1px solid ${col}40">
+      <span style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block;margin-right:4px"></span>
+      ${p.cat}
+    </span>
+    <div class="sr-dial-hint">
+      <span>🎯</span> Күнтізбеде алтын түспен бөлектелген
+    </div>`;
+}
+
+function applySearchHighlight(){
+  if(!searchHighlightDS||!dayEls[searchHighlightDS])return;
+  const el=dayEls[searchHighlightDS];
+  el.setAttribute('stroke','#e8d060');
+  el.setAttribute('stroke-width',SW_TODAY+16);
+  el.setAttribute('opacity','1');
+  el.classList.remove('today-anim');el.classList.add('search-anim');
+}
+function clearSearchHighlight(){
+  if(!searchHighlightDS)return;
+  const el=dayEls[searchHighlightDS];
+  if(el){el.classList.remove('search-anim');applyEl(searchHighlightDS);
+    if(searchHighlightDS===todayDS)el.classList.add('today-anim');}
+  searchHighlightDS=null;
+}
+
+/* ═══════════════════════════════════════════════════
+   DATA TAB STATS
+═══════════════════════════════════════════════════ */
+function updateStats(){
+  document.getElementById('statPeople').textContent=people.length;
+  const cats=[...new Set(people.map(p=>p.cat))];
+  document.getElementById('statCats').textContent=cats.length?cats.join(', '):'—';
+}
+
+/* ═══════════════════════════════════════════════════
+   SVG CALENDAR
+═══════════════════════════════════════════════════ */
+const NS='http://www.w3.org/2000/svg';
+const svgEl=document.getElementById('svg');
+const CX=500,CY=500,RING_R=415;
+const SW_BASE=70,SW_BD=92,SW_TODAY=100,SW_HOVER=30;
+const LABEL_R=316,SEA_R=484;
+
+function makeSVG(tag,a){
+  const el=document.createElementNS(NS,tag);
+  Object.entries(a).forEach(([k,v])=>el.setAttribute(k,v));return el;
+}
+function polar(r,a){const rad=(a-90)*Math.PI/180;return{x:CX+r*Math.cos(rad),y:CY+r*Math.sin(rad)};}
+function angleForDay(n){return 180-(n/TOTAL)*360;}
+
+// Static SVG elements (built once)
+[RING_R-SW_BASE/2-12,RING_R+SW_BASE/2+12].forEach(r=>{
+  svgEl.appendChild(makeSVG('circle',{cx:CX,cy:CY,r,fill:'none',stroke:'rgba(255,255,255,0.04)','stroke-width':'1'}));
+});
+[28,52,76].forEach(r=>{
+  svgEl.appendChild(makeSVG('circle',{cx:CX,cy:CY,r,fill:'none',stroke:'rgba(255,255,255,0.05)','stroke-width':'0.8'}));
+});
+const yr=makeSVG('text',{x:CX,y:CY,'text-anchor':'middle','dominant-baseline':'middle',
+  fill:'rgba(201,168,76,0.5)','font-size':'28','font-family':'serif','font-weight':'600'});
+yr.textContent=now.getFullYear();svgEl.appendChild(yr);
+
+[{text:'ЖАЗ',angle:0},{text:'КҮЗ',angle:270},{text:'ҚЫС',angle:180},{text:'КӨК',angle:90}]
+.forEach(s=>{
+  const p=polar(SEA_R,s.angle);
+  const t=makeSVG('text',{x:p.x,y:p.y,class:'season-lbl'});
+  t.textContent=s.text;svgEl.appendChild(t);
+});
+
+function drawTick(angle){
+  const p1=polar(RING_R-SW_BASE/2-5,angle),p2=polar(RING_R+SW_BASE/2+5,angle);
+  svgEl.appendChild(makeSVG('line',{x1:p1.x,y1:p1.y,x2:p2.x,y2:p2.y,
+    stroke:'rgba(255,255,255,0.22)','stroke-width':'1.4'}));
+}
+
+const segGroup=document.createElementNS(NS,'g');
+const lblGroup=document.createElementNS(NS,'g');
+svgEl.appendChild(segGroup);svgEl.appendChild(lblGroup);
+
+let dayCount=0;
+mDays.forEach((days,mi)=>{
+  const mc=MCOL[mi];drawTick(angleForDay(dayCount));
+  for(let d=1;d<=days;d++){
+    const ds=pad(d)+'.'+pad(mi+1);
+    const idx=dayCount+d-1,GAP=0.12;
+    const aS=angleForDay(idx)-GAP,aE=angleForDay(idx+1)+GAP;
+    const pS=polar(RING_R,aS),pE=polar(RING_R,aE);
+    const path=document.createElementNS(NS,'path');
+    path.setAttribute('d',`M ${pE.x} ${pE.y} A ${RING_R} ${RING_R} 0 0 1 ${pS.x} ${pS.y}`);
+    path.setAttribute('fill','none');path.setAttribute('stroke',mc);
+    path.setAttribute('stroke-width',SW_BASE);path.setAttribute('stroke-linecap','butt');
+    path.setAttribute('class','day-seg');path.setAttribute('opacity','0.38');path.dataset.ds=ds;
+    // Touch & mouse
+    path.addEventListener('touchstart',e=>{e.preventDefault();onDayTap(ds);},{passive:false});
+    path.addEventListener('mouseenter',()=>onDayTap(ds));
+    segGroup.appendChild(path);
+    dayEls[ds]=path;
+    elState[ds]={col:mc,w:SW_BASE,op:'0.38'};
+  }
+  const midA=angleForDay(dayCount+Math.floor(days/2));
+  const lp=polar(LABEL_R,midA);
+  const lbl=makeSVG('text',{x:lp.x,y:lp.y,class:'month-lbl',fill:mc,opacity:'0.88',
+    'font-size':days<=28?'13':'15'});
+  lbl.textContent=kMonths[mi];lblGroup.appendChild(lbl);
+  dayCount+=days;
+});
+
+function applyEl(ds){
+  const el=dayEls[ds],st=elState[ds];
+  if(!el||!st)return;
+  el.setAttribute('stroke',st.col);el.setAttribute('stroke-width',st.w);el.setAttribute('opacity',st.op);
+}
+
+function redrawSegments(){
+  let dc=0;
+  mDays.forEach((days,mi)=>{
+    for(let d=1;d<=days;d++){
+      const ds=pad(d)+'.'+pad(mi+1);
+      elState[ds]={col:MCOL[mi],w:SW_BASE,op:'0.38'};
+      applyEl(ds);if(dayEls[ds])dayEls[ds].classList.remove('today-anim','search-anim');
+    }dc+=days;
+  });
+  const bdMap={};
+  activePeople().forEach(p=>{const ds=p.date.substring(0,5);if(!bdMap[ds])bdMap[ds]=[];bdMap[ds].push(p);});
+  Object.entries(bdMap).forEach(([ds,arr])=>{
+    if(!elState[ds])return;
+    elState[ds]={col:catColor(arr[0].cat),w:SW_BD,op:'0.95'};applyEl(ds);
+  });
+  if(elState[todayDS]){
+    elState[todayDS]={col:'#4ade90',w:SW_TODAY,op:'1'};applyEl(todayDS);
+    dayEls[todayDS]&&dayEls[todayDS].classList.add('today-anim');
+  }
+}
+
+// Day info bar
+function onDayTap(ds){
+  const bar=document.getElementById('dayInfoBar');
+  const vis=(activeCategory==='all'?people:people.filter(p=>p.cat===activeCategory))
+    .filter(p=>p.date.startsWith(ds));
+  let html=`<div class="dib-date">${ds}</div>`;
+  vis.forEach(p=>{
+    const col=catColor(p.cat);
+    html+=`<div class="dib-person">
+      <span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></span>
+      <span style="font-size:14px">${p.name}</span>
+      <span style="font-size:13px;color:${col};margin-left:auto">${calcAge(p.date)} жас</span>
+    </div>`;
+  });
+  bar.innerHTML=html;
+  // Highlight tapped segment briefly
+  if(elState[ds]&&ds!==searchHighlightDS){
+    const el=dayEls[ds];
+    el.setAttribute('stroke-width',+elState[ds].w+SW_HOVER);el.setAttribute('opacity','1');
+    setTimeout(()=>{
+      if(ds!==searchHighlightDS)applyEl(ds);
+      if(ds===todayDS)el.classList.add('today-anim');
+    },600);
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   TAB NAVIGATION
+═══════════════════════════════════════════════════ */
+function switchTab(tabName,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tabName).classList.add('active');
+  btn.classList.add('active');
+  if(tabName==='search'){
+    setTimeout(()=>document.getElementById('searchInput').focus(),200);
+    renderPeopleList(document.getElementById('searchInput').value);
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   SHEET MODALS
+═══════════════════════════════════════════════════ */
+function openSheet(id){
+  const el=document.getElementById(id);
+  el.style.display='flex';
+  requestAnimationFrame(()=>el.classList.add('open'));
+}
+function closeSheet(id){
+  const el=document.getElementById(id);
+  el.classList.remove('open');
+  el.addEventListener('transitionend',()=>{el.style.display='none';},{ once:true });
+}
+function sheetOverlayClick(e,id){if(e.target.classList.contains('sheet-overlay'))closeSheet(id);}
+
+function openImport(mode){
+  importMode=mode;
+  pendingImport=null;
+  document.getElementById('previewSection').style.display='none';
+  document.getElementById('previewBody').innerHTML='';
+  document.getElementById('previewCats').innerHTML='';
+  document.getElementById('previewError').style.display='none';
+  document.getElementById('applyBtn').disabled=true;
+  document.getElementById('fileInput').value='';
+  document.getElementById('importModeLabel').textContent=
+    mode==='replace'?'Барлық деректерді жаңасымен алмастырады':'Бар деректерге жаңаларын қосады';
+  openSheet('importSheet');
+}
+
+function openConfirmClear(){openSheet('clearSheet');}
+
+function dzOver(e){e.preventDefault();document.getElementById('dropZone').classList.add('drag-over');}
+function dzLeave(){document.getElementById('dropZone').classList.remove('drag-over');}
+function dzDrop(e){e.preventDefault();dzLeave();const f=e.dataTransfer.files[0];if(f)handleFile(f);}
+
+function handleFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const parsed=[],errors=[];
+      for(let i=1;i<rows.length;i++){
+        const row=rows[i]||[];
+        let dateRaw=(row[0]||'').toString().trim();
+        const nameRaw=(row[1]||'').toString().trim();
+        const catRaw=(row[2]||'').toString().trim()||'Басқа';
+        if(!dateRaw&&!nameRaw)continue;
+        if(/^\d+$/.test(dateRaw)){
+          const dd=XLSX.SSF.parse_date_code(+dateRaw);
+          if(dd)dateRaw=pad(dd.d)+'.'+pad(dd.m)+'.'+dd.y;
+        }
+        if(!/^\d{2}\.\d{2}\.\d{4}$/.test(dateRaw)){errors.push(`${i+1}-жол: күн қате «${dateRaw}»`);continue;}
+        if(!nameRaw){errors.push(`${i+1}-жол: аты жоқ`);continue;}
+        parsed.push({name:nameRaw,date:dateRaw,cat:catRaw});
+      }
+      showPreview(parsed,errors);
+    }catch(err){
+      document.getElementById('previewSection').style.display='block';
+      const eb=document.getElementById('previewError');
+      eb.style.display='block';eb.textContent='Файлды оқу қатесі: '+err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showPreview(rows,errors){
+  document.getElementById('previewSection').style.display='block';
+  const tempCols={};
+  rows.forEach(r=>{if(!tempCols[r.cat])tempCols[r.cat]=PALETTE[Object.keys(tempCols).length%PALETTE.length];});
+
+  document.getElementById('previewBody').innerHTML=rows.map(r=>{
+    const col=tempCols[r.cat];
+    return`<tr><td>${r.date}</td><td>${r.name}</td>
+      <td><span class="p-pill" style="background:${col}18;color:${col};border:1px solid ${col}40">${r.cat}</span></td></tr>`;
+  }).join('');
+  document.getElementById('previewCount').textContent=rows.length+' жазба';
+
+  const catCounts={};rows.forEach(r=>catCounts[r.cat]=(catCounts[r.cat]||0)+1);
+  document.getElementById('previewCats').innerHTML=Object.entries(catCounts).map(([cat,cnt])=>{
+    const col=tempCols[cat];
+    return`<span class="preview-cat-chip" style="background:${col}15;color:${col};border:1px solid ${col}35">
+      <span style="width:6px;height:6px;border-radius:50%;background:${col};display:inline-block"></span>
+      ${cat} · ${cnt}
+    </span>`;
+  }).join('');
+
+  const eb=document.getElementById('previewError');
+  if(errors.length){eb.style.display='block';eb.textContent=errors.slice(0,5).join('\n')+(errors.length>5?`\n…тағы ${errors.length-5}`:'');}
+  else eb.style.display='none';
+
+  pendingImport={rows,tempCols};
+  document.getElementById('applyBtn').disabled=rows.length===0;
+}
+
+function applyImport(){
+  if(!pendingImport||!pendingImport.rows.length)return;
+  paletteIdx=0;
+  const newCols={};
+  Object.keys(pendingImport.tempCols).forEach(cat=>{
+    newCols[cat]=catColors[cat]||nextColor();
+  });
+  if(importMode==='replace'){
+    people=pendingImport.rows;catColors=newCols;
+    if(activeCategory!=='all'&&!catColors[activeCategory])activeCategory='all';
+  } else {
+    // Merge
+    const existing=new Set(people.map(p=>p.name+'|'+p.date));
+    const added=pendingImport.rows.filter(r=>!existing.has(r.name+'|'+r.date));
+    people=[...people,...added];
+    Object.assign(catColors,newCols);
+  }
+  document.getElementById('statUpdated').textContent=
+    pad(now.getDate())+'.'+pad(now.getMonth()+1)+'.'+now.getFullYear()+
+    ' '+pad(now.getHours())+':'+pad(now.getMinutes());
+  saveCache();
+  closeSheet('importSheet');
+  fullRefresh();
+}
+
+function nextColor(){return PALETTE[paletteIdx++%PALETTE.length];}
+
+/* ═══════════════════════════════════════════════════
+   FULL REFRESH
+═══════════════════════════════════════════════════ */
+function fullRefresh(){
+  buildChips();rebuildDatalist();
+  clearSearchHighlight();
+  document.getElementById('searchInput').value='';
+  document.getElementById('searchCard').style.display='none';
+  renderPeopleList();
+  redrawSegments();
+  renderToday();renderUpcoming();updateStats();
+  document.getElementById('dataDot').style.display=people.length?'none':'block';
+}
+
+/* ═══════════════════════════════════════════════════
+   PWA: MANIFEST + INSTALL
+═══════════════════════════════════════════════════ */
+(function setupPWA(){
+  const svgIcon=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="112" fill="#0b0f18"/>
+    <circle cx="256" cy="256" r="180" fill="none" stroke="#c9a84c" stroke-width="6" opacity=".3"/>
+    <circle cx="256" cy="256" r="180" fill="none" stroke="#4ade90" stroke-width="60"
+      stroke-dasharray="${2*Math.PI*180*(90/365)}" stroke-dashoffset="0"
+      transform="rotate(-90 256 256)" opacity=".8"/>
+    <circle cx="256" cy="256" r="180" fill="none" stroke="#c9a84c" stroke-width="60"
+      stroke-dasharray="${2*Math.PI*180*(30/365)}" stroke-dashoffset="${-2*Math.PI*180*(60/365)}"
+      transform="rotate(-90 256 256)" opacity=".6"/>
+    <text x="256" y="272" text-anchor="middle" fill="#c9a84c"
+      font-size="90" font-family="serif" font-weight="700">KÜN</text>
+  </svg>`;
+  const iconB64='data:image/svg+xml;base64,'+btoa(unescape(encodeURIComponent(svgIcon)));
+  const manifest={name:"Жылдық Күнтізбе",short_name:"Күнтізбе",
+    start_url:"./",display:"standalone",background_color:"#0b0f18",theme_color:"#0b0f18",
+    orientation:"portrait-primary",
+    icons:[{src:iconB64,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+  try{
+    const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+    const link=document.createElement('link');link.rel='manifest';
+    link.href=URL.createObjectURL(blob);document.head.appendChild(link);
+  }catch(e){}
+
+  // Apple touch icon
+  const al=document.createElement('link');al.rel='apple-touch-icon';al.href=iconB64;document.head.appendChild(al);
+
+  // Install prompt
+  let deferredPrompt=null;
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();deferredPrompt=e;
+    const banner=document.getElementById('installBanner');
+    banner.classList.add('show');
+    document.getElementById('installBtn').onclick=()=>{
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(()=>{banner.classList.remove('show');deferredPrompt=null;});
+    };
+  });
+  window.addEventListener('appinstalled',()=>{
+    document.getElementById('installBanner').classList.remove('show');
+  });
+})();
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+redrawSegments();
+if(loadCache()){
+  fullRefresh();
+} else {
+  renderToday();renderUpcoming();updateStats();
+  document.getElementById('dataDot').style.display='block';
+}
+</script>
+</body>
+</html>
